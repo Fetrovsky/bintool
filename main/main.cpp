@@ -1,12 +1,17 @@
-#include <iostream>
 #include <fstream>
+#include <iomanip>
+#include <iostream>
 #include <map>
 #include <string>
+#include <sstream>
 #include <memory>
 #include <variant>
+#include <vector>
 
 #include "include/file-format.h"
 #include "elf/elf.h"
+
+#include "elf-dumper.h"
 
 
 using std::nullptr_t;
@@ -30,11 +35,6 @@ int Usage(string_view program_name)
         << std::endl;
 
     return 1;
-}
-
-File_Format Probe_ELF_File_Format(string_view file_contents)
-{
-    return File_Format::ELF_Executable;
 }
 
 File_Format Probe_MZ_File_Format(string_view file_contents)
@@ -82,22 +82,6 @@ bool Read_File(string const& file_name, string& file_contents)
     stream.read(&file_contents[0], file_size);
 
     return true;
-}
-
-void Show_ELF_File_Details(ELF64::ELF64 const& elf)
-{
-}
-
-void Show_ELF_File_Details(ELF const& elf)
-{
-    std::cout
-        << "This is a file of type "
-        << Get_File_Format_Name(elf.Get_File_Format())
-        << "."
-        << std::endl;
-
-    if (elf.Is_ELF64())
-        Show_ELF_File_Details(static_cast<ELF64::ELF64 const&>(elf));
 }
 
 int main(int argc, char* argv[])

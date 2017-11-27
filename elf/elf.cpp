@@ -20,6 +20,6 @@ ELF* ELF::Parse(string_view buffer)
     if (Make_Magic(elf_ident.File_Identification) != "\x7f""ELF")
         return nullptr;
 
-    return new ELF64::ELF64 { header };
+    return new ELF64::ELF64 { buffer };
 }
 

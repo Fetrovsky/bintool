@@ -1,8 +1,10 @@
 #ifndef FILE_FORMAT__INCLUDED
 #define FILE_FORMAT__INCLUDED
 
-#include <string>
+#include <string_view>
 #include <map>
+
+using std::operator""sv;
 
 enum class File_Format
 {
@@ -22,23 +24,23 @@ enum class File_Format
     Unknown
 };
 
-inline std::string const& Get_File_Format_Name(File_Format value)
+inline std::string_view const& Get_File_Format_Name(File_Format value)
 {
-    static std::map<File_Format, std::string> const File_Formats = {
-        { File_Format::ELF_Executable, "ELF_Executable" },
-        { File_Format::ELF_Object, "ELF_Object" },
-        { File_Format::ELF_Shared_Object, "ELF_Shared_Object" },
-        { File_Format::ELF64_Executable, "ELF64_Executable" },
-        { File_Format::ELF64_Object, "ELF64_Object" },
-        { File_Format::ELF64_Shared_Object, "ELF64_Shared_Object" },
-        { File_Format::ELF64_Core_Dump, "ELF64_Core_Dump" },
-        { File_Format::AR_Arch, "AR_Arch" },
-        { File_Format::AR_BigAF, "AR_BigAF" },
-        { File_Format::MZ_Executable, "MZ_Executable" },
-        { File_Format::MZ_Object, "MZ_Object" },
-        { File_Format::MZ_DLL, "MZ_DLL" },
-        { File_Format::MZ_Library, "MZ_Library" },
-        { File_Format::Unknown, "Unknown" }
+    static std::map<File_Format, std::string_view> const File_Formats = {
+        { File_Format::ELF_Executable, "ELF_Executable"sv },
+        { File_Format::ELF_Object, "ELF_Object"sv },
+        { File_Format::ELF_Shared_Object, "ELF_Shared_Object"sv },
+        { File_Format::ELF64_Executable, "ELF64_Executable"sv },
+        { File_Format::ELF64_Object, "ELF64_Object"sv },
+        { File_Format::ELF64_Shared_Object, "ELF64_Shared_Object"sv },
+        { File_Format::ELF64_Core_Dump, "ELF64_Core_Dump"sv },
+        { File_Format::AR_Arch, "AR_Arch"sv },
+        { File_Format::AR_BigAF, "AR_BigAF"sv },
+        { File_Format::MZ_Executable, "MZ_Executable"sv },
+        { File_Format::MZ_Object, "MZ_Object"sv },
+        { File_Format::MZ_DLL, "MZ_DLL"sv },
+        { File_Format::MZ_Library, "MZ_Library"sv },
+        { File_Format::Unknown, "Unknown"sv }
     };
 
     return File_Formats.at(value);
