@@ -6,85 +6,17 @@
 #include <sstream>
 
 #include "include/file-format.h"
-#include "include/array-view.h"
+#include "include/range.h"
 
 #include <iostream>
 
 using std::string;
 using std::string_view;
 
-template<typename T>
-class Range
+class ELF: public Parsed_File
 {
-    private:
-        T _begin;
-        T _end;
-
-    public:
-        Range(T begin, T end):
-            _begin(begin),
-            _end(end)
-        {}
-
-        T begin() const
-        {
-            return _begin;
-        }
-
-        T end() const
-        {
-            return _end;
-        }
-
-        size_t size() const
-        {
-            return length();
-        }
-
-        size_t length() const
-        {
-            return (end() - begin());
-        }
-
-        bool Contains(T value) const
-        {
-            return ((value >= begin()) && (value < end()));
-        }
-};
-
-class ELF
-{
-    private:
-        string _buffer;
-
     protected:
-        ELF(string_view buffer):
-            _buffer(buffer)
-        {}
-
-        template<typename T>
-        T& get_field(size_t offset)
-        { return Parse_As<T>(&_buffer[offset]); }
-
-        template<typename T>
-        T& get_field(size_t offset) const
-        { return Parse_As<T>(&_buffer[offset]); }
-
-        template<typename Entry>
-        array_view<Entry> get_table(size_t offset, size_t entry_count)
-        { return array_view<Entry>(&get_field<Entry>(offset), entry_count); }
-
-        template<typename Entry>
-        array_view<Entry const> get_table(size_t offset, size_t entry_count) const
-        { return array_view<Entry const>(&get_field<Entry const>(offset), entry_count); }
-
-        template<typename Header>
-        Header& get_header()
-        { return get_field<Header>(0); }
-
-        template<typename Header>
-        Header const& get_header() const
-        { return get_field<Header const>(0); }
+        using Parsed_File::Parsed_File;
 
     public:
         static ELF* Parse(std::string_view buffer);
@@ -94,7 +26,7 @@ class ELF
         virtual bool Is_ELF64() const { return false; }
 
         virtual ~ELF() {}
-};
+};  // class ELF
 
 namespace ELF64
 {
@@ -243,7 +175,7 @@ namespace ELF64
         Mask_Processor  = 0x00ff0000
     };
 
-    inline string_view Get_Segment_Flag_Names(uint32_t value)
+    inline string Get_Segment_Flag_Names(uint32_t value)
     {
         string result;
 
@@ -319,7 +251,7 @@ namespace ELF64
         Mask_Proc   = 0xf0000000
     };
 
-    inline string_view Get_Section_Flag_Names(uint32_t value)
+    inline string Get_Section_Flag_Names(uint32_t value)
     {
         string result;
 
@@ -336,9 +268,7 @@ namespace ELF64
         protected:
 
         public:
-            ELF64(string_view buffer):
-                ELF(buffer)
-            {}
+            using ELF::ELF;
 
             File_Format Get_File_Format() const override
             {
@@ -380,7 +310,7 @@ namespace ELF64
             }
 
             ~ELF64() override {}
-    };
+    };  // class ELF64
 }
 
 #endif  // ELF_H__INCLUDED

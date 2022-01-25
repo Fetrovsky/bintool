@@ -1,8 +1,12 @@
 #ifndef FILE_FORMAT__INCLUDED
 #define FILE_FORMAT__INCLUDED
 
+#include "include/interface.h"
+
 #include <string_view>
 #include <map>
+
+#include "include/array-view.h"
 
 using std::operator""sv;
 
@@ -57,6 +61,44 @@ inline std::string_view Make_Magic(Item_Type (&item_array)[N])
 {
     return std::string_view(reinterpret_cast<char const*>(item_array), N);
 }
+
+class Parsed_File: public Base_Class
+{
+    private:
+        std::string_view _buffer;
+
+    protected:
+        Parsed_File(std::string_view buffer): _buffer{buffer} {}
+
+    public:
+        template<typename T>
+        T& get_field(size_t offset)
+        { return Parse_As<T>(&buffer()[offset]); }
+
+        template<typename T>
+        T& get_field(size_t offset) const
+        { return Parse_As<T>(&buffer()[offset]); }
+
+        template<typename Entry>
+        array_view<Entry> get_table(size_t offset, size_t entry_count)
+        { return array_view<Entry>(&get_field<Entry>(offset), entry_count); }
+
+        template<typename Entry>
+        array_view<Entry const> get_table(size_t offset, size_t entry_count) const
+        { return array_view<Entry const>(&get_field<Entry const>(offset), entry_count); }
+
+        template<typename Header>
+        Header& get_header()
+        { return get_field<Header>(0); }
+
+        template<typename Header>
+        Header const& get_header() const
+        { return get_field<Header const>(0); }
+
+        virtual File_Format Get_File_Format() const = 0;
+
+        virtual std::string_view buffer() const { return _buffer; }
+};
 
 #endif  // FILE_FORMAT__INCLUDED
 

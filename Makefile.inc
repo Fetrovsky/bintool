@@ -1,10 +1,9 @@
-TOOLSET=/clang5
-BINPATH=$(TOOLSET)/bin
-CPP=$(BINPATH)/clang++
-LINK=$(BINPATH)/clang++
+BINPATH=/usr/local/bin
+CPP=$(BINPATH)/clang++13
+LINK=$(BINPATH)/clang++13
 
 .cpp.o:
-	$(CPP) -std=c++17 -c $? -o $@ -I../
+	$(CPP) -std=c++20 -c $? -o $@ -I../
 
 .PHONY: clean
 

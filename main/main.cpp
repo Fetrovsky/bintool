@@ -8,11 +8,12 @@
 #include <variant>
 #include <vector>
 
-#include "include/file-format.h"
-#include "elf/elf.h"
+#include <include/file-format.h>
+#include <elf/elf.h>
+#include <mz/mz.h>
 
 #include "elf-dumper.h"
-
+#include "mz-dumper.h"
 
 using std::nullptr_t;
 using std::string;
@@ -37,12 +38,7 @@ int Usage(string_view program_name)
     return 1;
 }
 
-File_Format Probe_MZ_File_Format(string_view file_contents)
-{
-    return File_Format::MZ_Executable;
-}
-
-std::variant<nullptr_t, unique_ptr<ELF>>
+std::variant<nullptr_t, unique_ptr<Parsed_File>>
 Parse(string_view file_contents)
 {
     if (file_contents.length() < 8)
@@ -57,9 +53,10 @@ Parse(string_view file_contents)
 //
 //    if (file_contents.substr(0, 8) == "!<bigaf>")
 //        return File_Format::AR_BigAF;
-//
-//    if (file_contents.substr(0, 2) == "MZ")
-//        return Probe_MZ_File_Format(file_contents);
+
+    if (auto mz = unique_ptr<MZ>(MZ::Parse(file_contents));
+             mz != nullptr)
+        return mz;
 
     return nullptr;
 }
@@ -82,6 +79,49 @@ bool Read_File(string const& file_name, string& file_contents)
     stream.read(&file_contents[0], file_size);
 
     return true;
+}
+
+void Show_File_Details(Parsed_File const& parsed_file)
+{
+    auto const file_format = parsed_file.Get_File_Format();
+    auto const file_format_name = Get_File_Format_Name(file_format);
+
+    std::cout << "This is a file of type " << file_format_name << "." << std::endl;
+
+    switch(file_format)
+    {
+        case File_Format::ELF_Executable:
+        case File_Format::ELF_Object:
+        case File_Format::ELF_Shared_Object:
+            Show_ELF_File_Details(static_cast<ELF const&>(parsed_file));
+            break;
+
+        case File_Format::ELF64_Executable:
+        case File_Format::ELF64_Object:
+        case File_Format::ELF64_Shared_Object:
+        case File_Format::ELF64_Core_Dump:
+            Show_ELF_File_Details(static_cast<ELF64::ELF64 const&>(parsed_file));
+            break;
+
+        case File_Format::AR_Arch:
+            std::cout << "Arch not understood." << std::endl;
+            break;
+
+        case File_Format::AR_BigAF:
+            std::cout << "Arch not understood." << std::endl;
+            break;
+
+        case File_Format::MZ_Executable:
+        case File_Format::MZ_Object:
+        case File_Format::MZ_DLL:
+        case File_Format::MZ_Library:
+            Show_MZ_File_Details(static_cast<MZ const&>(parsed_file));
+            break;
+
+        default:
+            std::cout << "Unknown file format " << file_format_name << std::endl;
+            break;
+    }
 }
 
 int main(int argc, char* argv[])
@@ -110,7 +150,9 @@ int main(int argc, char* argv[])
 
     switch (parsed_content.index())
     {
-        case 1: Show_ELF_File_Details(*std::get<unique_ptr<ELF>>(parsed_content)); break;
+        case 1:
+          Show_File_Details(*std::get<unique_ptr<Parsed_File>>(parsed_content));
+          break;
     }
 
     return 0;
