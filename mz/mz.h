@@ -17,6 +17,7 @@ class MZ: public Parsed_File
         struct COFF_Header;
         struct Optional_Header;
         struct Optional_Header_Plus;
+        struct Image_Data_Directory;
 
         enum class Machine_Type: uint16_t;
         enum class Image_Subsystem: uint16_t;
@@ -36,6 +37,8 @@ class MZ: public Parsed_File
 
         virtual ~MZ() {}
 
+        virtual File_Format Get_File_Format() const;
+
         COFF_Header const& Get_Header() const;
         std::variant<std::nullptr_t, Optional_Header, Optional_Header_Plus> Get_Optional_Header() const;
 
@@ -44,11 +47,9 @@ class MZ: public Parsed_File
 
         uint32_t Get_Optional_Header_Address() const;
         uint32_t Get_Optional_Header_Size() const;
-
-        virtual File_Format Get_File_Format() const;
 };
 
-struct MZ::COFF_Header
+struct __attribute__((packed)) MZ::COFF_Header
 {
     uint32_t Signature;
     Machine_Type Machine;
@@ -177,73 +178,6 @@ static inline constexpr auto Get_Image_File_Characteristics_Names = [](MZ::Image
     return Get_Enum_Names<MZ::Image_File_Characteristics>(ifc, &Get_Image_File_Characteristics_Name);
 };
 
-struct MZ::Optional_Header
-{
-    Magic_Number Magic;
-    uint8_t Major_Linker_Version;
-    uint8_t Minor_Linker_Version;
-    uint32_t Size_Of_Code;
-    uint32_t Size_Of_Initialized_Data;
-    uint32_t Size_Of_Uninitialized_Data;
-    uint32_t Address_Of_Entry_Point;
-    uint32_t Base_Of_Code;
-    uint32_t Image_Base;
-    uint32_t Section_Alignment;
-    uint32_t File_Alignment;
-    uint16_t Major_Operating_System_Version;
-    uint16_t Minor_Operating_System_Version;
-    uint16_t Major_Image_Version;
-    uint16_t Minor_Image_Version;
-    uint16_t Major_Subsystem_Version;
-    uint16_t Minor_Subsystem_Version;
-    uint32_t Win32_Version_Value;
-    uint32_t Size_Of_Image;
-    uint32_t Size_Of_Headers;
-    uint32_t Check_Sum;
-    Image_Subsystem Subsystem;
-    Image_DLL_Characteristics Dll_Characteristics;
-    uint32_t Size_Of_Stack_Reserve;
-    uint32_t Size_Of_Stack_Commit;
-    uint32_t Size_Of_Heap_Reserve;
-    uint32_t Size_Of_Heap_Commit;
-    uint32_t Loader_Flags;
-    uint32_t Number_Of_Rva_And_Sizes;
-};  // namespace Optional_Header
-
-struct MZ::Optional_Header_Plus
-{
-    Magic_Number Magic;
-    uint8_t Major_Linker_Version;
-    uint8_t Minor_Linker_Version;
-    uint32_t Size_Of_Code;
-    uint32_t Size_Of_Initialized_Data;
-    uint32_t Size_Of_Uninitialized_Data;
-    uint32_t Address_Of_Entry_Point;
-    uint32_t Base_Of_Code;
-    uint32_t Base_Of_Data;
-    uint64_t Image_Base;
-    uint32_t Section_Alignment;
-    uint32_t File_Alignment;
-    uint16_t Major_Operating_System_Version;
-    uint16_t Minor_Operating_System_Version;
-    uint16_t Major_Image_Version;
-    uint16_t Minor_Image_Version;
-    uint16_t Major_Subsystem_Version;
-    uint16_t Minor_Subsystem_Version;
-    uint32_t Win32_Version_Value;
-    uint32_t Size_Of_Image;
-    uint32_t Size_Of_Headers;
-    uint32_t Check_Sum;
-    Image_Subsystem  Subsystem;
-    Image_DLL_Characteristics Dll_Characteristics;
-    uint64_t Size_Of_Stack_Reserve;
-    uint64_t Size_Of_Stack_Commit;
-    uint64_t Size_Of_Heap_Reserve;
-    uint64_t Size_Of_Heap_Commit;
-    uint32_t Loader_Flags;
-    uint32_t Number_Of_Rva_And_Sizes;
-};  // namespace Optional_Header
-
 enum class MZ::Magic_Number: uint16_t
 {
     PE32      =  0x10b,
@@ -350,6 +284,104 @@ static inline constexpr auto Get_Image_DLL_Characteristics_Names = [](MZ::Image_
 {
     return Get_Enum_Names<MZ::Image_DLL_Characteristics>(ifc, &Get_Image_DLL_Characteristics_Name);
 };
+//
+//
+// Offset:
+//      PE: 96
+//      PE+: 112
+//
+struct __attribute__((packed)) MZ::Image_Data_Directory {
+    struct Entry {
+        uint64_t Virtual_Address:32;
+        uint64_t Size:32;
+    };
+
+    Entry Export_Table;
+    Entry Import_Table;
+    Entry Resource_Table;
+    Entry Exception_Table;
+    Entry Certificate_Table;
+    Entry Base_Relocation_Table;
+    Entry Debug;
+    Entry Architecture;
+    Entry Global_Ptr;
+    Entry TLS_Table;
+    Entry Load_Config_Table;
+    Entry Bound_Import;
+    Entry IAT;
+    Entry Delay_Import_Descriptor;
+    Entry CLR_Runtime_Header;
+    Entry Reserved_MBZ;
+};
+
+struct __attribute__((packed)) MZ::Optional_Header
+{
+    Magic_Number Magic;
+    uint8_t Major_Linker_Version;
+    uint8_t Minor_Linker_Version;
+    uint32_t Size_Of_Code;
+    uint32_t Size_Of_Initialized_Data;
+    uint32_t Size_Of_Uninitialized_Data;
+    uint32_t Address_Of_Entry_Point;
+    uint32_t Base_Of_Code;
+    uint32_t Base_Of_Data;
+    uint32_t Image_Base;
+    uint32_t Section_Alignment;
+    uint32_t File_Alignment;
+    uint16_t Major_Operating_System_Version;
+    uint16_t Minor_Operating_System_Version;
+    uint16_t Major_Image_Version;
+    uint16_t Minor_Image_Version;
+    uint16_t Major_Subsystem_Version;
+    uint16_t Minor_Subsystem_Version;
+    uint32_t Win32_Version_Value;
+    uint32_t Size_Of_Image;
+    uint32_t Size_Of_Headers;
+    uint32_t Check_Sum;
+    Image_Subsystem Subsystem;
+    Image_DLL_Characteristics Dll_Characteristics;
+    uint32_t Size_Of_Stack_Reserve;
+    uint32_t Size_Of_Stack_Commit;
+    uint32_t Size_Of_Heap_Reserve;
+    uint32_t Size_Of_Heap_Commit;
+    uint32_t Loader_Flags;
+    uint32_t Number_Of_Rva_And_Sizes;
+    Image_Data_Directory Image_Data_Directory;
+};  // namespace Optional_Header
+
+struct __attribute__((packed)) MZ::Optional_Header_Plus
+{
+    Magic_Number Magic;
+    uint8_t Major_Linker_Version;
+    uint8_t Minor_Linker_Version;
+    uint32_t Size_Of_Code;
+    uint32_t Size_Of_Initialized_Data;
+    uint32_t Size_Of_Uninitialized_Data;
+    uint32_t Address_Of_Entry_Point;
+    uint32_t Base_Of_Code;
+    uint64_t Image_Base;
+    uint32_t Section_Alignment;
+    uint32_t File_Alignment;
+    uint16_t Major_Operating_System_Version;
+    uint16_t Minor_Operating_System_Version;
+    uint16_t Major_Image_Version;
+    uint16_t Minor_Image_Version;
+    uint16_t Major_Subsystem_Version;
+    uint16_t Minor_Subsystem_Version;
+    uint32_t Win32_Version_Value;
+    uint32_t Size_Of_Image;
+    uint32_t Size_Of_Headers;
+    uint32_t Check_Sum;
+    Image_Subsystem  Subsystem;
+    Image_DLL_Characteristics Dll_Characteristics;
+    uint64_t Size_Of_Stack_Reserve;
+    uint64_t Size_Of_Stack_Commit;
+    uint64_t Size_Of_Heap_Reserve;
+    uint64_t Size_Of_Heap_Commit;
+    uint32_t Loader_Flags;
+    uint32_t Number_Of_Rva_And_Sizes;
+    Image_Data_Directory Image_Data_Directory;
+};  // namespace Optional_Header
 
 #endif  // MZ_H__INCLUDED
 
