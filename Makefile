@@ -6,6 +6,7 @@ clean:
 	rm -fv lib*.a
 	cd main && make clean
 	cd elf && make clean
+	cd mz && make clean
 
 libmain.a:
 	cd main && make
@@ -13,6 +14,9 @@ libmain.a:
 libelf.a:
 	cd elf && make
 
-bintool: libmain.a libelf.a
+libmz.a:
+	cd mz && make
+
+bintool: libmain.a libelf.a libmz.a
 	$(LINK) -o $@ $?
 

@@ -72,11 +72,7 @@ class Parsed_File: public Base_Class
 
     public:
         template<typename T>
-        T& get_field(size_t offset)
-        { return Parse_As<T>(&buffer()[offset]); }
-
-        template<typename T>
-        T& get_field(size_t offset) const
+        T const& get_field(size_t offset) const
         { return Parse_As<T>(&buffer()[offset]); }
 
         template<typename Entry>
@@ -88,12 +84,12 @@ class Parsed_File: public Base_Class
         { return array_view<Entry const>(&get_field<Entry const>(offset), entry_count); }
 
         template<typename Header>
-        Header& get_header()
-        { return get_field<Header>(0); }
+        Header& get_header(uint32_t offset = 0)
+        { return get_field<Header>(offset); }
 
         template<typename Header>
-        Header const& get_header() const
-        { return get_field<Header const>(0); }
+        Header const& get_header(uint32_t offset = 0) const
+        { return get_field<Header const>(offset); }
 
         virtual File_Format Get_File_Format() const = 0;
 

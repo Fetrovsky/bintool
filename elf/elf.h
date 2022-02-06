@@ -104,7 +104,7 @@ namespace ELF64
 
     inline string_view Get_File_Type_Name(uint32_t value)
     {
-        std::map<File_Type, string> enum_map = {
+        static std::map<File_Type, string> enum_map = {
             { File_Type::None,           "None"          },
             { File_Type::Relocatable,    "Relocatable"   },
             { File_Type::Executable,     "Executable"    },
@@ -148,7 +148,7 @@ namespace ELF64
 
     inline string_view Get_Segment_Type_Name(uint32_t value)
     {
-        std::map<Segment_Type, string> enum_map = {
+        static std::map<Segment_Type, string> enum_map = {
             { Segment_Type::Null,           "Null"           },
             { Segment_Type::Load,           "Load"           },
             { Segment_Type::Dynamic,        "Dynamic"        },
@@ -221,7 +221,7 @@ namespace ELF64
 
     inline string_view Get_Section_Type_Name(uint32_t value)
     {
-        std::map<Section_Type, string> enum_map = {
+        static std::map<Section_Type, string> enum_map = {
             { Section_Type::Null, "Null" },
             { Section_Type::Program_Bits, "Program_Bits" },
             { Section_Type::Symbol_Table, "Symbol_Table" },
@@ -287,7 +287,7 @@ namespace ELF64
 
             bool Is_ELF64() const override { return true; }
 
-            Header const& Get_Header() const
+            auto const& Get_Header() const
             { return get_header<Header>(); }
 
             File_Type Get_File_Type() const 

@@ -140,19 +140,16 @@ int main(int argc, char* argv[])
         << filename << ": " << contents.length() << " bytes."
         << std::endl;
 
-    auto parsed_content = Parse(contents);
-
-    if (std::holds_alternative<std::nullptr_t>(parsed_content))
+    switch (auto parsed_content = Parse(contents); parsed_content.index())
     {
-        std::cout << "Could not understand the format." << std::endl;
-        return -3;
-    }
+        case 0:
+            std::cout << "Could not understand the format." << std::endl;
+            return -3;
+            break;
 
-    switch (parsed_content.index())
-    {
         case 1:
-          Show_File_Details(*std::get<unique_ptr<Parsed_File>>(parsed_content));
-          break;
+            Show_File_Details(*std::get<unique_ptr<Parsed_File>>(parsed_content));
+            break;
     }
 
     return 0;
