@@ -17,7 +17,8 @@ class MZ: public Parsed_File
         struct COFF_Header;
         struct Optional_Header;
         struct Optional_Header_Plus;
-        struct Image_Data_Directory;
+        struct Image_Data_Directories;
+        struct Section_Header;
 
         enum class Machine_Type: uint16_t;
         enum class Image_Subsystem: uint16_t;
@@ -25,6 +26,8 @@ class MZ: public Parsed_File
 
         enum class Magic_Number: uint16_t;
         enum class Image_DLL_Characteristics: uint16_t;
+
+        enum class Section_Characteristics: uint32_t;
 
     protected:
         using Parsed_File::Parsed_File;
@@ -45,8 +48,13 @@ class MZ: public Parsed_File
         uint32_t Get_COFF_Header_Address() const;
         uint32_t Get_COFF_Header_Size() const;
 
-        uint32_t Get_Optional_Header_Address() const;
+        uint64_t Get_Optional_Header_Address() const;
         uint32_t Get_Optional_Header_Size() const;
+
+        uint16_t Get_Number_of_Sections() const;
+        uint64_t Get_Section_Table_Address() const;
+        Section_Header const& Get_Section_Header(uint16_t i) const;
+        std::string_view Get_Section_Name(Section_Header const& sh) const;
 };
 
 struct __attribute__((packed)) MZ::COFF_Header
@@ -274,7 +282,7 @@ static inline string_view Get_Image_DLL_Characteristics_Name(MZ::Image_DLL_Chara
         {MZ::Image_DLL_Characteristics::APPCONTAINER, "Image must execute in an AppContainer."},
         {MZ::Image_DLL_Characteristics::WDM_DRIVER, "A WDM driver."},
         {MZ::Image_DLL_Characteristics::GUARD_CF, "Image supports Control Flow Guard."},
-        {MZ::Image_DLL_Characteristics::TERMINAL_SERVER_AWARE, "Terminal Server aware."},
+        {MZ::Image_DLL_Characteristics::TERMINAL_SERVER_AWARE, "Terminal Server aware."}
     };
 
     return enum_map[MZ::Image_DLL_Characteristics{idc}];
@@ -284,13 +292,14 @@ static inline constexpr auto Get_Image_DLL_Characteristics_Names = [](MZ::Image_
 {
     return Get_Enum_Names<MZ::Image_DLL_Characteristics>(ifc, &Get_Image_DLL_Characteristics_Name);
 };
+
 //
 //
 // Offset:
 //      PE: 96
 //      PE+: 112
 //
-struct __attribute__((packed)) MZ::Image_Data_Directory {
+struct __attribute__((packed)) MZ::Image_Data_Directories {
     struct Entry {
         uint64_t Virtual_Address:32;
         uint64_t Size:32;
@@ -346,7 +355,7 @@ struct __attribute__((packed)) MZ::Optional_Header
     uint32_t Size_Of_Heap_Commit;
     uint32_t Loader_Flags;
     uint32_t Number_Of_Rva_And_Sizes;
-    Image_Data_Directory Image_Data_Directory;
+    Image_Data_Directories Image_Data_Directories;
 };  // namespace Optional_Header
 
 struct __attribute__((packed)) MZ::Optional_Header_Plus
@@ -380,8 +389,125 @@ struct __attribute__((packed)) MZ::Optional_Header_Plus
     uint64_t Size_Of_Heap_Commit;
     uint32_t Loader_Flags;
     uint32_t Number_Of_Rva_And_Sizes;
-    Image_Data_Directory Image_Data_Directory;
+    Image_Data_Directories Image_Data_Directories;
 };  // namespace Optional_Header
 
+struct __attribute__((packed)) MZ::Section_Header
+{
+    char Name[8];
+    uint32_t Virtual_Size;
+    uint32_t Virtual_Address;
+    uint32_t Size_Of_Raw_Data;
+    uint32_t Pointer_To_Raw_Data;
+    uint32_t Pointer_To_Relocations;
+    uint32_t Pointer_To_Linenumbers;
+    uint16_t Number_Of_Relocations;
+    uint16_t Number_Of_Linenumbers;
+    Section_Characteristics Characteristics;
+};
+
+enum class MZ::Section_Characteristics: uint32_t
+{
+    RESERVED_0 = 0x00000000,
+    RESERVED_1 = 0x00000001,
+    RESERVED_2 = 0x00000002,
+    RESERVED_4 = 0x00000004,
+    IMAGE_SCN_TYPE_NO_PAD = 0x00000008,
+    RESERVED_10 = 0x00000010,
+    IMAGE_SCN_CNT_CODE = 0x00000020,
+    IMAGE_SCN_CNT_INITIALIZED_DATA = 0x00000040,
+    IMAGE_SCN_CNT_UNINITIALIZED_DATA = 0x00000080,
+    IMAGE_SCN_LNK_OTHER = 0x00000100,
+    IMAGE_SCN_LNK_INFO = 0x00000200,
+    RESERVED_400 = 0x00000400,
+    IMAGE_SCN_LNK_REMOVE = 0x00000800,
+    IMAGE_SCN_LNK_COMDAT = 0x00001000,
+    IMAGE_SCN_GPREL = 0x00008000,
+    IMAGE_SCN_MEM_PURGEABLE = 0x00020000,
+    IMAGE_SCN_MEM_16BIT = 0x00020000,
+    IMAGE_SCN_MEM_LOCKED = 0x00040000,
+    IMAGE_SCN_MEM_PRELOAD = 0x00080000,
+    IMAGE_SCN_ALIGN_1BYTES = 0x00100000,
+    IMAGE_SCN_ALIGN_2BYTES = 0x00200000,
+    IMAGE_SCN_ALIGN_4BYTES = 0x00300000,
+    IMAGE_SCN_ALIGN_8BYTES = 0x00400000,
+    IMAGE_SCN_ALIGN_16BYTES = 0x00500000,
+    IMAGE_SCN_ALIGN_32BYTES = 0x00600000,
+    IMAGE_SCN_ALIGN_64BYTES = 0x00700000,
+    IMAGE_SCN_ALIGN_128BYTES = 0x00800000,
+    IMAGE_SCN_ALIGN_256BYTES = 0x00900000,
+    IMAGE_SCN_ALIGN_512BYTES = 0x00A00000,
+    IMAGE_SCN_ALIGN_1024BYTES = 0x00B00000,
+    IMAGE_SCN_ALIGN_2048BYTES = 0x00C00000,
+    IMAGE_SCN_ALIGN_4096BYTES = 0x00D00000,
+    IMAGE_SCN_ALIGN_8192BYTES = 0x00E00000,
+    IMAGE_SCN_LNK_NRELOC_OVFL = 0x01000000,
+    IMAGE_SCN_MEM_DISCARDABLE = 0x02000000,
+    IMAGE_SCN_MEM_NOT_CACHED = 0x04000000,
+    IMAGE_SCN_MEM_NOT_PAGED = 0x08000000,
+    IMAGE_SCN_MEM_SHARED = 0x10000000,
+    IMAGE_SCN_MEM_EXECUTE = 0x20000000,
+    IMAGE_SCN_MEM_READ = 0x40000000,
+    IMAGE_SCN_MEM_WRITE = 0x80000000
+};
+
+ENABLE_BITWISE_OPERATIONS(MZ::Section_Characteristics);
+
+static inline string_view Get_Section_Characteristics_Name(MZ::Section_Characteristics sc)
+{
+    static std::map<MZ::Section_Characteristics, string_view> enum_map = {
+        {MZ::Section_Characteristics::RESERVED_0, "Reserved for future use."},
+        {MZ::Section_Characteristics::RESERVED_1, "Reserved for future use."},
+        {MZ::Section_Characteristics::RESERVED_2, "Reserved for future use."},
+        {MZ::Section_Characteristics::RESERVED_4, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_TYPE_NO_PAD, "The section should not be padded to the next boundary. This flag is obsolete and is replaced by IMAGE_SCN_ALIGN_1BYTES. This is valid only for object files."},
+        {MZ::Section_Characteristics::RESERVED_10, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_CNT_CODE, "The section contains executable code."},
+        {MZ::Section_Characteristics::IMAGE_SCN_CNT_INITIALIZED_DATA, "The section contains initialized data."},
+        {MZ::Section_Characteristics::IMAGE_SCN_CNT_UNINITIALIZED_DATA, "The section contains uninitialized data."},
+        {MZ::Section_Characteristics::IMAGE_SCN_LNK_OTHER, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_LNK_INFO, "The section contains comments or other information. The .drectve section has this type. This is valid for object files only."},
+        {MZ::Section_Characteristics::RESERVED_400, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_LNK_REMOVE, "The section will not become part of the image. This is valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_LNK_COMDAT, "The section contains COMDAT data. For more information, see COMDAT Sections (Object Only). This is valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_GPREL, "The section contains data referenced through the global pointer (GP)."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_PURGEABLE, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_16BIT, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_LOCKED, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_PRELOAD, "Reserved for future use."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_1BYTES, "Align data on a 1-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_2BYTES, "Align data on a 2-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_4BYTES, "Align data on a 4-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_8BYTES, "Align data on an 8-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_16BYTES, "Align data on a 16-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_32BYTES, "Align data on a 32-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_64BYTES, "Align data on a 64-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_128BYTES, "Align data on a 128-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_256BYTES, "Align data on a 256-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_512BYTES, "Align data on a 512-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_1024BYTES, "Align data on a 1024-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_2048BYTES, "Align data on a 2048-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_4096BYTES, "Align data on a 4096-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_ALIGN_8192BYTES, "Align data on an 8192-byte boundary. Valid only for object files."},
+        {MZ::Section_Characteristics::IMAGE_SCN_LNK_NRELOC_OVFL, "The section contains extended relocations."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_DISCARDABLE, "The section can be discarded as needed."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_NOT_CACHED, "The section cannot be cached."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_NOT_PAGED, "The section is not pageable."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_SHARED, "The section can be shared in memory."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_EXECUTE, "The section can be executed as code."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_READ, "The section can be read."},
+        {MZ::Section_Characteristics::IMAGE_SCN_MEM_WRITE, "The section can be written to."}
+    };
+
+    return enum_map[MZ::Section_Characteristics{sc}];
+}
+
+static inline constexpr auto Get_Section_Characteristics_Names = [](MZ::Section_Characteristics sc)
+{
+    return Get_Enum_Names<MZ::Section_Characteristics>(sc, &Get_Section_Characteristics_Name);
+};
+
+
+  
 #endif  // MZ_H__INCLUDED
 

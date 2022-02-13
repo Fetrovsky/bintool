@@ -46,7 +46,7 @@ static inline auto Get_Enum_Names(Enum value, std::function<std::string_view(Enu
 {
     std::vector<std::string_view> names;
 
-    for (int i = 0; i < 16; ++i)
+    for (int i = 0; i < sizeof(Enum) * 8; ++i)
     {
         auto probing = Enum(1<<i);
 

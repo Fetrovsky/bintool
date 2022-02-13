@@ -18,7 +18,9 @@ using typeid_t = void const*;
 template<typename Optional_Header_Type>
 void Show_MZ_Optional_Header(Optional_Header_Type const& oh);
 
-void Show_MZ_Image_Data_Directory(MZ::Image_Data_Directory const& idd);
+void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd);
+
+void Show_MZ_Section_Table(MZ const& mz);
 
 void Show_MZ_File_Details(MZ const& mz)
 {
@@ -65,6 +67,8 @@ void Show_MZ_File_Details(MZ const& mz)
             break;
 
     }
+
+    Show_MZ_Section_Table(mz);
 }
 
 template <typename T>
@@ -128,11 +132,11 @@ void Show_MZ_Optional_Header(Optional_Header_Type const& oh)
         << "\n    Loader_Flags: " << oh.Loader_Flags
         << "\n    Number_Of_Rva_And_Sizes: " << oh.Number_Of_Rva_And_Sizes << std::endl;
 
-    Show_MZ_Image_Data_Directory(oh.Image_Data_Directory);
+    Show_MZ_Image_Data_Directory_Summary(oh.Image_Data_Directories);
 }
 
 template<typename Stream>
-Stream& operator<<(Stream& stream, MZ::Image_Data_Directory::Entry const& idde)
+Stream& operator<<(Stream& stream, MZ::Image_Data_Directories::Entry const& idde)
 {
     auto const start = idde.Virtual_Address;
     auto const size = idde.Size;
@@ -148,10 +152,10 @@ Stream& operator<<(Stream& stream, MZ::Image_Data_Directory::Entry const& idde)
     return stream;
 }
 
-void Show_MZ_Image_Data_Directory(MZ::Image_Data_Directory const& idd)
+void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd)
 {
     cout
-        << "\n  Image Data Directory:"
+        << "\n  Image Data Directories:"
         << "\n    Export_Table: " << idd.Export_Table
         << "\n    Import_Table: " << idd.Import_Table
         << "\n    Resource_Table: " << idd.Resource_Table
@@ -167,6 +171,40 @@ void Show_MZ_Image_Data_Directory(MZ::Image_Data_Directory const& idd)
         << "\n    IAT: " << idd.IAT
         << "\n    Delay_Import_Descriptor: " << idd.Delay_Import_Descriptor
         << "\n    CLR_Runtime_Header: " << idd.CLR_Runtime_Header
-        << "\n    Reserved_MBZ: " << idd.Reserved_MBZ;
+        << "\n    Reserved_MBZ: " << idd.Reserved_MBZ << std::endl;
+}
+
+void Show_MZ_Section_Header(MZ const& mz, int i, MZ::Section_Header const& sh)
+{
+    auto const Section_Name = mz.Get_Section_Name(sh);
+
+    cout
+        << "\n    Section " << i << ": " << Section_Name
+        << "\n      Virtual_Size: " << sh.Virtual_Size
+        << "\n      Virtual_Address: " << sh.Virtual_Address
+        << "\n      Size_Of_Raw_Data: " << sh.Size_Of_Raw_Data
+        << "\n      Pointer_To_Raw_Data: " << sh.Pointer_To_Raw_Data
+        << "\n      Pointer_To_Relocations: " << sh.Pointer_To_Relocations
+        << "\n      Pointer_To_Linenumbers: " << sh.Pointer_To_Linenumbers
+        << "\n      Number_Of_Relocations: " << sh.Number_Of_Relocations
+        << "\n      Number_Of_Linenumbers: " << sh.Number_Of_Linenumbers
+        << "\n      Characteristics: " << (std::hex) << uint32_t(sh.Characteristics);
+
+    auto const characteristics = Get_Section_Characteristics_Names(sh.Characteristics);
+
+    for (auto const ch: characteristics)
+        cout << "\n        " << ch;
+
+    cout << std::endl;
+}
+
+void Show_MZ_Section_Table(MZ const& mz)
+{
+    auto const Number_Of_Sections = mz.Get_Number_of_Sections();
+
+    cout << "\n  Image has " << Number_Of_Sections << " sections:";
+
+    for (int i = 0; i < Number_Of_Sections; ++i)
+        Show_MZ_Section_Header(mz, i, mz.Get_Section_Header(i));
 }
 
