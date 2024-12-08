@@ -1,7 +1,9 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <list>
 #include <map>
+#include <span>
 #include <string>
 #include <sstream>
 #include <memory>
@@ -12,6 +14,7 @@
 #include <elf/elf.h>
 #include <mz/mz.h>
 
+#include "command-line-arguments.h"
 #include "elf-dumper.h"
 #include "mz-dumper.h"
 
@@ -19,15 +22,6 @@ using std::nullptr_t;
 using std::string;
 using std::string_view;
 using std::unique_ptr;
-
-bool Get_Arguments(int argc, char* argv[], string& filename)
-{
-    if (argc != 2)
-        return false;
-
-    filename = argv[1];
-    return true;
-}
 
 int Usage(string_view program_name)
 {
@@ -81,7 +75,7 @@ bool Read_File(string const& file_name, string& file_contents)
     return true;
 }
 
-void Show_File_Details(Parsed_File const& parsed_file)
+void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments const& /*arguments*/)
 {
     auto const file_format = parsed_file.Get_File_Format();
     auto const file_format_name = Get_File_Format_Name(file_format);
@@ -126,18 +120,27 @@ void Show_File_Details(Parsed_File const& parsed_file)
 
 int main(int argc, char* argv[])
 {
-    string filename, contents;
+    Command_Line_Arguments arguments {
+        {{"--verbose", "-v"}},
+        {{"--section", "-s"}}
+    };
 
-    if (argc != 2)
+    if (!arguments.Parse(std::span(argv, argc)))
+    {
+        return Usage(argv[0]);
+    }
+
+    if (arguments.Standalone().size() != 1)
         return Usage(argv[0]);
 
-    filename = argv[1];
+    string filename = arguments.Standalone()[0];
+    string contents;
 
     if (!Read_File(filename, contents))
         return -2;
 
     std::cout
-        << filename << ": " << contents.length() << " bytes."
+        << filename << ": " << contents.length() << "(0x" << std::hex << contents.length() << ")" << " bytes."
         << std::endl;
 
     switch (auto parsed_content = Parse(contents); parsed_content.index())
@@ -148,7 +151,7 @@ int main(int argc, char* argv[])
             break;
 
         case 1:
-            Show_File_Details(*std::get<unique_ptr<Parsed_File>>(parsed_content));
+            Show_File_Details(*std::get<unique_ptr<Parsed_File>>(parsed_content), arguments);
             break;
     }
 

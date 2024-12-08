@@ -11,14 +11,14 @@ MZ* MZ::Parse(std::string_view buffer)
         return nullptr;
 
     auto signature_offset = Parse_As<uint32_t>(&buffer[0x3c]);
-    std::cout << "Signature offset found at 0x3c: " << std::hex << signature_offset << std::endl;
+    std::cout << std::hex << "Signature offset found at 3c: " << signature_offset << std::endl;
 
     auto signature = Parse_As<uint32_t>(&buffer[signature_offset]);
-    std::cout
-        << "Signature found at " << std::hex << signature_offset
+    std::cout << std::hex
+	<< "Signature found at " << signature_offset
         << ": " << signature << std::endl;
 
-    if (signature == 0x4550)
+    if (signature == 0x4550)  // "PE"
         std::cout << "PE signature found.  This is a Portable Executable file." << std::endl;
     else
         return nullptr;

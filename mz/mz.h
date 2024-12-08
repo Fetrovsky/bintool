@@ -105,7 +105,7 @@ static inline string_view Get_Machine_Type_Name(MZ::Machine_Type mt)
     static std::map<MZ::Machine_Type, string_view> enum_map = {
         {MZ::Machine_Type::UNKNOWN, "The content of this field is assumed to be applicable to any machine type"sv},
         {MZ::Machine_Type::AM33, "Matsushita AM33"sv},
-        {MZ::Machine_Type::AMD64, "64 x64"sv},
+        {MZ::Machine_Type::AMD64, "x64"sv},
         {MZ::Machine_Type::ARM, "ARM little endian"sv},
         {MZ::Machine_Type::ARM64, "ARM64 little endian"sv},
         {MZ::Machine_Type::ARMNT, "ARM Thumb-2 little endian"sv},

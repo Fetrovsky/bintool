@@ -85,52 +85,57 @@ constexpr typeid_t typeof()
     return &wrapper<T>::id;
 }
 
+template <typename Major, typename Minor>
+std::string Build_Version(Major major, Minor minor)
+{
+    return std::format("{}.{}", int(major), int(minor));
+}
+
 template<typename Optional_Header_Type>
 void Show_MZ_Optional_Header(Optional_Header_Type const& oh)
 {
     cout
         << "\n  OptionalHeader:"
-        << "\n    Magic: " << Get_Magic_Number_Name(oh.Magic)
-        << "\n    Major_Linker_Version: " << int(oh.Major_Linker_Version)
-        << "\n    Minor_Linker_Version: " << int(oh.Minor_Linker_Version)
-        << "\n    Size_Of_Code: " << oh.Size_Of_Code
-        << "\n    Size_Of_Initialized_Data: " << oh.Size_Of_Initialized_Data
-        << "\n    Size_Of_Uninitialized_Data: " << oh.Size_Of_Uninitialized_Data
-        << "\n    Address_Of_Entry_Point: " << oh.Address_Of_Entry_Point
-        << "\n    Base_Of_Code: " << oh.Base_Of_Code;
+        << "\n    Standard Fields:"
+        << "\n      Magic: " << Get_Magic_Number_Name(oh.Magic)
+        << "\n      Linker Version: " << Build_Version(oh.Major_Linker_Version, oh.Minor_Linker_Version)
+        << "\n      Size_Of_Code: " << oh.Size_Of_Code
+        << "\n      Size_Of_Initialized_Data: " << oh.Size_Of_Initialized_Data
+        << "\n      Size_Of_Uninitialized_Data: " << oh.Size_Of_Uninitialized_Data
+        << "\n      Address_Of_Entry_Point: " << oh.Address_Of_Entry_Point
+        << "\n      Base_Of_Code: " << oh.Base_Of_Code;
 
     if constexpr(typeof<Optional_Header_Type>() == typeof<MZ::Optional_Header>())
         cout << "\n    Base_Of_Data: " << oh.Base_Of_Data;
 
     cout
-        << "\n    Image_Base: " << oh.Image_Base
-        << "\n    Section_Alignment: " << oh.Section_Alignment
-        << "\n    File_Alignment: " << oh.File_Alignment
-        << "\n    Major_Operating_System_Version: " << oh.Major_Operating_System_Version
-        << "\n    Minor_Operating_System_Version: " << oh.Minor_Operating_System_Version
-        << "\n    Major_Image_Version: " << oh.Major_Image_Version
-        << "\n    Minor_Image_Version: " << oh.Minor_Image_Version
-        << "\n    Major_Subsystem_Version: " << oh.Major_Subsystem_Version
-        << "\n    Minor_Subsystem_Version: " << oh.Minor_Subsystem_Version
-        << "\n    Win32_Version_Value: " << oh.Win32_Version_Value
-        << "\n    Size_Of_Image: " << oh.Size_Of_Image
-        << "\n    Size_Of_Headers: " << oh.Size_Of_Headers
-        << "\n    Check_Sum: " << oh.Check_Sum
-        << "\n    Subsystem: " << Get_Subsystem_Name(oh.Subsystem)
-        << "\n    Dll_Characteristics: " << int(oh.Dll_Characteristics);
+        << "\n"
+        << "\n    Windows-Specific fields:"
+        << "\n      Image_Base: " << oh.Image_Base
+        << "\n      Section_Alignment: " << oh.Section_Alignment
+        << "\n      File_Alignment: " << oh.File_Alignment
+        << "\n      OS Version: " << Build_Version(oh.Major_Operating_System_Version, oh.Minor_Operating_System_Version)
+        << "\n      Image Version: " << Build_Version(oh.Major_Image_Version, oh.Minor_Image_Version)
+        << "\n      Subsystem Version: " << Build_Version(oh.Major_Subsystem_Version, oh.Minor_Subsystem_Version)
+        << "\n      Win32_Version_Value: " << oh.Win32_Version_Value
+        << "\n      Size_Of_Image: " << oh.Size_Of_Image
+        << "\n      Size_Of_Headers: " << oh.Size_Of_Headers
+        << "\n      Check_Sum: " << oh.Check_Sum
+        << "\n      Subsystem: " << Get_Subsystem_Name(oh.Subsystem)
+        << "\n      Dll_Characteristics: " << int(oh.Dll_Characteristics);
 
     auto const characteristics = Get_Image_DLL_Characteristics_Names(oh.Dll_Characteristics);
 
     for (auto const ch: characteristics)
-        cout << "\n      " << ch;
+        cout << "\n        " << ch;
 
     cout
-        << "\n    Size_Of_Stack_Reserve: " << oh.Size_Of_Stack_Reserve
-        << "\n    Size_Of_Stack_Commit: " << oh.Size_Of_Stack_Commit
-        << "\n    Size_Of_Heap_Reserve: " << oh.Size_Of_Heap_Reserve
-        << "\n    Size_Of_Heap_Commit: " << oh.Size_Of_Heap_Commit
-        << "\n    Loader_Flags: " << oh.Loader_Flags
-        << "\n    Number_Of_Rva_And_Sizes: " << oh.Number_Of_Rva_And_Sizes << std::endl;
+        << "\n      Size_Of_Stack_Reserve: " << oh.Size_Of_Stack_Reserve
+        << "\n      Size_Of_Stack_Commit: " << oh.Size_Of_Stack_Commit
+        << "\n      Size_Of_Heap_Reserve: " << oh.Size_Of_Heap_Reserve
+        << "\n      Size_Of_Heap_Commit: " << oh.Size_Of_Heap_Commit
+        << "\n      Loader_Flags: " << oh.Loader_Flags
+        << "\n      Number_Of_Rva_And_Sizes: " << oh.Number_Of_Rva_And_Sizes << std::endl;
 
     Show_MZ_Image_Data_Directory_Summary(oh.Image_Data_Directories);
 }
@@ -146,7 +151,7 @@ Stream& operator<<(Stream& stream, MZ::Image_Data_Directories::Entry const& idde
     {
         stream << "N/A";
     } else {
-        stream << std::hex << "0x" << start << "..0x" << end << " (0x" << size << "=" << std::dec << size << ")";
+        stream << std::hex << "0x" << start << "..0x" << end << " (" << size << "h = " << std::dec << size << ")";
     }
 
     return stream;
