@@ -3,7 +3,9 @@
 
 #include <mz/mz.h>
 
-void Show_MZ_File_Details(MZ const& mz);
+#include "command-line-arguments.h"
+
+void Show_MZ_File_Details(MZ const& mz, Command_Line_Arguments const& arguments);
 
 #endif  // MZ_DUMPER_H__INCLUDED
 

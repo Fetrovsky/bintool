@@ -19,6 +19,7 @@ class MZ: public Parsed_File
         struct Optional_Header_Plus;
         struct Image_Data_Directories;
         struct Section_Header;
+        struct Import_Directory_Table_Entry;
 
         enum class Machine_Type: uint16_t;
         enum class Image_Subsystem: uint16_t;
@@ -28,6 +29,8 @@ class MZ: public Parsed_File
         enum class Image_DLL_Characteristics: uint16_t;
 
         enum class Section_Characteristics: uint32_t;
+
+        uint64_t resolve_rva(uint64_t rva) const;
 
     protected:
         using Parsed_File::Parsed_File;
@@ -55,6 +58,8 @@ class MZ: public Parsed_File
         uint64_t Get_Section_Table_Address() const;
         Section_Header const& Get_Section_Header(uint16_t i) const;
         std::string_view Get_Section_Name(Section_Header const& sh) const;
+
+        Import_Directory_Table_Entry const* Get_Import_Table() const;
 };
 
 struct __attribute__((packed)) MZ::COFF_Header
@@ -507,7 +512,37 @@ static inline constexpr auto Get_Section_Characteristics_Names = [](MZ::Section_
     return Get_Enum_Names<MZ::Section_Characteristics>(sc, &Get_Section_Characteristics_Name);
 };
 
+struct __attribute__((packed)) MZ::Import_Directory_Table_Entry
+{
+    //
+    //  The RVA of the import lookup table.
+    //  This table contains a name or ordinal for each import.
+    //  (The name "Characteristics" is used in Winnt.h, but no longer describes this field.)
+    //
+    uint32_t Import_Lookup_Table_RVA;
 
-  
+    //
+    //  The stamp that is set to zero until the image is bound.
+    // After the image is bound, this field is set to the time/data stamp of the DLL.
+    //
+    uint32_t Time_Date_Stamp;
+
+    //
+    //  The index of the first forwarder reference.
+    //
+    uint32_t Forwarder_Chain;
+
+    //
+    //  The address of an ASCII string that contains the name of the DLL. This address is relative to the image base.
+    //
+    uint32_t Name_RVA;
+
+    //
+    //  The RVA of the import address table.
+    //  The contents of this table are identical to the contents of the import lookup table until the image is bound.
+    //
+    uint32_t Import_Address_Table_RVA;
+};
+
 #endif  // MZ_H__INCLUDED
 

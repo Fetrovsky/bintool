@@ -75,7 +75,7 @@ bool Read_File(string const& file_name, string& file_contents)
     return true;
 }
 
-void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments const& /*arguments*/)
+void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments const& arguments)
 {
     auto const file_format = parsed_file.Get_File_Format();
     auto const file_format_name = Get_File_Format_Name(file_format);
@@ -109,7 +109,7 @@ void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments co
         case File_Format::MZ_Object:
         case File_Format::MZ_DLL:
         case File_Format::MZ_Library:
-            Show_MZ_File_Details(static_cast<MZ const&>(parsed_file));
+            Show_MZ_File_Details(static_cast<MZ const&>(parsed_file), arguments);
             break;
 
         default:
@@ -121,7 +121,7 @@ void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments co
 int main(int argc, char* argv[])
 {
     Command_Line_Arguments arguments {
-        {{"--verbose", "-v"}},
+        {{"--verbose", "-v"}, {"--imports", "-i"}},
         {{"--section", "-s"}}
     };
 

@@ -1,6 +1,7 @@
 #ifndef COMMAND_LINE_ARGUMENTS__INCLUDED
 #define COMMAND_LINE_ARGUMENTS__INCLUDED
 
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>

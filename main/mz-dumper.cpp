@@ -6,6 +6,8 @@
 
 #include <mz/mz.h>
 
+#include "command-line-arguments.h"
+
 using std::chrono::seconds;
 using std::chrono::system_clock;
 using std::chrono::time_point;
@@ -19,10 +21,10 @@ template<typename Optional_Header_Type>
 void Show_MZ_Optional_Header(Optional_Header_Type const& oh);
 
 void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd);
-
 void Show_MZ_Section_Table(MZ const& mz);
+void Show_Imports(MZ const& mz);
 
-void Show_MZ_File_Details(MZ const& mz)
+void Show_MZ_File_Details(MZ const& mz, Command_Line_Arguments const& arguments)
 {
     auto const format_name = Get_File_Format_Name(mz.Get_File_Format());
 
@@ -65,10 +67,10 @@ void Show_MZ_File_Details(MZ const& mz)
         case 2:
             Show_MZ_Optional_Header(std::get<MZ::Optional_Header_Plus>(optional_header));
             break;
-
     }
 
     Show_MZ_Section_Table(mz);
+    Show_Imports(mz);
 }
 
 template <typename T>
@@ -211,5 +213,27 @@ void Show_MZ_Section_Table(MZ const& mz)
 
     for (int i = 0; i < Number_Of_Sections; ++i)
         Show_MZ_Section_Header(mz, i, mz.Get_Section_Header(i));
+}
+
+void Show_Imports(MZ const& mz)
+{
+    auto const* entry = mz.Get_Import_Table();
+
+    if (!entry)
+    {
+        cout << "No import information available." << endl;
+        return;
+    }
+
+    std::cout
+        << "\n  Entry:"
+        << "\n    Import_Lookup_Table_RVA: " << entry->Import_Lookup_Table_RVA
+        << "\n    Time_Date_Stamp: " << entry->Time_Date_Stamp
+        << "\n    Forwarder_Chain: " << entry->Forwarder_Chain
+        << "\n    Name_RVA: " << entry->Name_RVA
+        << "\n    Import_Address_Table_RVA: " << entry->Import_Address_Table_RVA
+        << "\n";
+
+    return;
 }
 
