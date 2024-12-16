@@ -38,6 +38,11 @@ class Switch
 
             return false;
         }
+
+        bool Is(string_view name) const
+        {
+            return ((name == _short_name) || (name == _long_name));
+        }
 };
 
 class Parameter
@@ -140,6 +145,15 @@ class Command_Line_Arguments
         std::vector<Switch> const& Switches() const noexcept { return _switches; }
         std::vector<Parameter> const& Parameters() const noexcept { return _parameters; }
         std::vector<string> const& Standalone() const noexcept { return _standalone; }
+
+        bool Get_Switch(string_view name) const
+        {
+            for (auto const& s: Switches())
+                if (s.Is(name))
+                    return s;
+
+            return false;
+        }
 };
 
 #endif  // COMMAND_LINE_ARGUMENTS__INCLUDED

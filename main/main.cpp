@@ -121,8 +121,8 @@ void Show_File_Details(Parsed_File const& parsed_file, Command_Line_Arguments co
 int main(int argc, char* argv[])
 {
     Command_Line_Arguments arguments {
-        {{"--verbose", "-v"}, {"--imports", "-i"}},
-        {{"--section", "-s"}}
+        {{"--verbose", "-v"}, {"--imports", "-i"}, {"--sections", "-s"}},
+        {}
     };
 
     if (!arguments.Parse(std::span(argv, argc)))

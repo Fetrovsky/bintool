@@ -20,6 +20,8 @@ class MZ: public Parsed_File
         struct Image_Data_Directories;
         struct Section_Header;
         struct Import_Directory_Table_Entry;
+        struct Import_Lookup_Table_Entry;
+        struct Hint_Name_Table_Entry;
 
         enum class Machine_Type: uint16_t;
         enum class Image_Subsystem: uint16_t;
@@ -29,8 +31,6 @@ class MZ: public Parsed_File
         enum class Image_DLL_Characteristics: uint16_t;
 
         enum class Section_Characteristics: uint32_t;
-
-        uint64_t resolve_rva(uint64_t rva) const;
 
     protected:
         using Parsed_File::Parsed_File;
@@ -44,6 +44,8 @@ class MZ: public Parsed_File
         virtual ~MZ() {}
 
         virtual File_Format Get_File_Format() const;
+
+        std::string_view Get_String(uint32_t RVA) const;
 
         COFF_Header const& Get_Header() const;
         std::variant<std::nullptr_t, Optional_Header, Optional_Header_Plus> Get_Optional_Header() const;
@@ -60,6 +62,10 @@ class MZ: public Parsed_File
         std::string_view Get_Section_Name(Section_Header const& sh) const;
 
         Import_Directory_Table_Entry const* Get_Import_Table() const;
+        Import_Lookup_Table_Entry const* Get_Import_Lookup_Table(uint32_t RVA) const;
+        Hint_Name_Table_Entry const* Get_Hint_Name_Table_Entry(uint32_t RVA) const;
+
+        uint64_t Resolve_RVA(uint64_t rva) const;
 };
 
 struct __attribute__((packed)) MZ::COFF_Header
@@ -542,6 +548,57 @@ struct __attribute__((packed)) MZ::Import_Directory_Table_Entry
     //  The contents of this table are identical to the contents of the import lookup table until the image is bound.
     //
     uint32_t Import_Address_Table_RVA;
+};
+
+struct __attribute((packed)) MZ::Import_Lookup_Table_Entry
+{
+    union {
+        uint64_t As_Uint64;
+
+        struct {
+            //
+            // A 31-bit RVA of a hint/name table entry.  This field is used only if the Ordinal/Name Flag
+            // bit field is 0 (import by name).  For PE32+ bits 62-31 must be zero.
+            //
+            uint64_t Hint_Or_Name_Table_RVA:31;
+
+            // Bits 62-31 must be zero.
+            uint64_t Reserved_Name_MBZ: 32;
+
+            uint64_t Name_Flag: 1;  // Must be zero.
+        };
+
+        struct {
+            //
+            // A 16-bit ordinal number.  This field is used only if the Ordinal/Name Flag bit field is 1 (import by ordinal).
+            // Bits 30-15 or 62-15 must be 0.
+            //
+            uint64_t Ordinal_Number:16;
+
+            // Bits 62-31 must be zero.
+            uint64_t Reserved_Ordinal_MBZ: 47;
+
+            uint64_t Ordinal_Flag: 1;  // Must be one.
+        };
+    };
+};
+
+struct __attribute((packed)) MZ::Hint_Name_Table_Entry
+{
+    //
+    // An index into the export name pointer table.  A match is attempted first with this value.
+    // If it fails, a binary search is performed on the DLL's export name pointer table.
+    //
+    uint16_t Hint;
+
+    //
+    // An ASCII string that contains the name to import.  This is the string that must be matched
+    // to the public name in the DLL.  This string is case sensitive and terminated by a null byte.
+    //
+    char Name[];  // MUL-terminated.
+
+    // A trailing zero-pad byte that appears after the trailing null byte, if necessary,
+    // to align the next entry on an even boundary.
 };
 
 #endif  // MZ_H__INCLUDED

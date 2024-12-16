@@ -142,12 +142,15 @@ MZ::Import_Directory_Table_Entry const* MZ::Get_Import_Table() const
         return nullptr;
     }
 
-    std::cout << "RVA: " << idd->Import_Table.Virtual_Address << std::endl;
-
-    return &get_field<Import_Directory_Table_Entry>(resolve_rva(idd->Import_Table.Virtual_Address));
+    return &get_field<Import_Directory_Table_Entry>(Resolve_RVA(idd->Import_Table.Virtual_Address));
 }
 
-uint64_t MZ::resolve_rva(uint64_t rva) const
+MZ::Import_Lookup_Table_Entry const* MZ::Get_Import_Lookup_Table(uint32_t RVA) const
+{
+    return &get_field<Import_Lookup_Table_Entry>(Resolve_RVA(RVA));
+}
+
+uint64_t MZ::Resolve_RVA(uint64_t RVA) const
 {
     auto const Number_Of_Sections = Get_Number_of_Sections();
 
@@ -157,7 +160,7 @@ uint64_t MZ::resolve_rva(uint64_t rva) const
     {
         sh = &Get_Section_Header(i);
 
-        if ((rva > sh->Virtual_Address) && (rva < (sh->Virtual_Address + sh->Virtual_Size)))
+        if ((RVA > sh->Virtual_Address) && (RVA < (sh->Virtual_Address + sh->Virtual_Size)))
             break;
 
         sh = nullptr;
@@ -166,14 +169,17 @@ uint64_t MZ::resolve_rva(uint64_t rva) const
     if (sh == nullptr)
         return std::numeric_limits<uint64_t>::max();
 
-    uint64_t offset = rva - sh->Virtual_Address;
-
-    std::cout << "RVA: " << rva << std::endl;
-    std::cout << "Virtual_Address: " << sh->Virtual_Address << std::endl;
-    std::cout << "offset: " << offset << std::endl;
-    std::cout << "Section offset in file: " << sh->Pointer_To_Raw_Data << std::endl;
-    std::cout << "File Offset: " << (sh->Pointer_To_Raw_Data + offset) << std::endl;
-
+    uint64_t offset = RVA - sh->Virtual_Address;
     return sh->Pointer_To_Raw_Data + offset;
+}
+
+MZ::Hint_Name_Table_Entry const* MZ::Get_Hint_Name_Table_Entry(uint32_t RVA) const
+{
+    return As<Hint_Name_Table_Entry>(Resolve_RVA(RVA));
+}
+
+std::string_view MZ::Get_String(uint32_t RVA) const
+{
+    return Parsed_File::Get_String(Resolve_RVA(RVA));
 }
 

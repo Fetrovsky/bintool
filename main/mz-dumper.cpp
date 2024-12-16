@@ -3,6 +3,7 @@
 #include <chrono>
 #include <ctime>
 #include <iostream>
+#include <sstream>
 
 #include <mz/mz.h>
 
@@ -21,11 +22,13 @@ template<typename Optional_Header_Type>
 void Show_MZ_Optional_Header(Optional_Header_Type const& oh);
 
 void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd);
-void Show_MZ_Section_Table(MZ const& mz);
-void Show_Imports(MZ const& mz);
+void Show_MZ_Section_Table(MZ const& mz, bool verbose);
+void Show_Imports(MZ const& mz, bool verbose);
 
 void Show_MZ_File_Details(MZ const& mz, Command_Line_Arguments const& arguments)
 {
+    bool verbose = arguments.Get_Switch("-v");
+
     auto const format_name = Get_File_Format_Name(mz.Get_File_Format());
 
     auto coff_header = mz.Get_Header();
@@ -53,24 +56,30 @@ void Show_MZ_File_Details(MZ const& mz, Command_Line_Arguments const& arguments)
 
     cout << '\n';
 
-    switch (auto optional_header = mz.Get_Optional_Header();
-            optional_header.index())
+    if (verbose)
     {
-        case 0:
-            cout << "Optional Header not present." << endl;
-            break;
+        switch (auto optional_header = mz.Get_Optional_Header();
+                optional_header.index())
+        {
+            case 0:
+                cout << "Optional Header not present." << endl;
+                break;
 
-        case 1:
-            Show_MZ_Optional_Header(std::get<MZ::Optional_Header>(optional_header));
-            break;
+            case 1:
+                Show_MZ_Optional_Header(std::get<MZ::Optional_Header>(optional_header));
+                break;
 
-        case 2:
-            Show_MZ_Optional_Header(std::get<MZ::Optional_Header_Plus>(optional_header));
-            break;
+            case 2:
+                Show_MZ_Optional_Header(std::get<MZ::Optional_Header_Plus>(optional_header));
+                break;
+        }
     }
 
-    Show_MZ_Section_Table(mz);
-    Show_Imports(mz);
+    if (arguments.Get_Switch("-s"))
+        Show_MZ_Section_Table(mz, verbose);
+
+    if (arguments.Get_Switch("-i"))
+        Show_Imports(mz, verbose);
 }
 
 template <typename T>
@@ -90,6 +99,7 @@ constexpr typeid_t typeof()
 template <typename Major, typename Minor>
 std::string Build_Version(Major major, Minor minor)
 {
+
     return std::format("{}.{}", int(major), int(minor));
 }
 
@@ -123,7 +133,7 @@ void Show_MZ_Optional_Header(Optional_Header_Type const& oh)
         << "\n      Size_Of_Image: " << oh.Size_Of_Image
         << "\n      Size_Of_Headers: " << oh.Size_Of_Headers
         << "\n      Check_Sum: " << oh.Check_Sum
-        << "\n      Subsystem: " << Get_Subsystem_Name(oh.Subsystem)
+        << "\n      Subsystem: " << uint16_t(oh.Subsystem) << " (" << Get_Subsystem_Name(oh.Subsystem) << ')'
         << "\n      Dll_Characteristics: " << int(oh.Dll_Characteristics);
 
     auto const characteristics = Get_Image_DLL_Characteristics_Names(oh.Dll_Characteristics);
@@ -142,11 +152,9 @@ void Show_MZ_Optional_Header(Optional_Header_Type const& oh)
     Show_MZ_Image_Data_Directory_Summary(oh.Image_Data_Directories);
 }
 
-template<typename Stream>
-Stream& operator<<(Stream& stream, MZ::Image_Data_Directories::Entry const& idde)
+std::string Format_Range(uint32_t start, uint32_t size)
 {
-    auto const start = idde.Virtual_Address;
-    auto const size = idde.Size;
+    std::stringstream stream;
     auto const end = start + size;
 
     if (size == 0)
@@ -156,7 +164,13 @@ Stream& operator<<(Stream& stream, MZ::Image_Data_Directories::Entry const& idde
         stream << std::hex << "0x" << start << "..0x" << end << " (" << size << "h = " << std::dec << size << ")";
     }
 
-    return stream;
+    return stream.str();
+}
+
+template<typename Stream>
+Stream& operator<<(Stream& stream, MZ::Image_Data_Directories::Entry const& idde)
+{
+    return (stream << Format_Range(idde.Virtual_Address, idde.Size));
 }
 
 void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd)
@@ -181,21 +195,28 @@ void Show_MZ_Image_Data_Directory_Summary(MZ::Image_Data_Directories const& idd)
         << "\n    Reserved_MBZ: " << idd.Reserved_MBZ << std::endl;
 }
 
-void Show_MZ_Section_Header(MZ const& mz, int i, MZ::Section_Header const& sh)
+void Show_MZ_Section_Header(MZ const& mz, int i, MZ::Section_Header const& sh, bool verbose)
 {
     auto const Section_Name = mz.Get_Section_Name(sh);
 
-    cout
-        << "\n    Section " << i << ": " << Section_Name
-        << "\n      Virtual_Size: " << sh.Virtual_Size
-        << "\n      Virtual_Address: " << sh.Virtual_Address
-        << "\n      Size_Of_Raw_Data: " << sh.Size_Of_Raw_Data
-        << "\n      Pointer_To_Raw_Data: " << sh.Pointer_To_Raw_Data
-        << "\n      Pointer_To_Relocations: " << sh.Pointer_To_Relocations
-        << "\n      Pointer_To_Linenumbers: " << sh.Pointer_To_Linenumbers
-        << "\n      Number_Of_Relocations: " << sh.Number_Of_Relocations
-        << "\n      Number_Of_Linenumbers: " << sh.Number_Of_Linenumbers
-        << "\n      Characteristics: " << (std::hex) << uint32_t(sh.Characteristics);
+    if (verbose)
+    {
+        cout
+            << "\n    Section " << i << ": " << Section_Name
+            << "\n      Virtual: " << Format_Range(sh.Virtual_Address, sh.Virtual_Size)
+            << "\n      Raw Data: " << Format_Range(sh.Pointer_To_Raw_Data, sh.Size_Of_Raw_Data)
+            << "\n      Pointer_To_Relocations: " << sh.Pointer_To_Relocations
+            << "\n      Pointer_To_Linenumbers: " << sh.Pointer_To_Linenumbers
+            << "\n      Number_Of_Relocations: " << sh.Number_Of_Relocations
+            << "\n      Number_Of_Linenumbers: " << sh.Number_Of_Linenumbers
+            << "\n      Characteristics: " << (std::hex) << uint32_t(sh.Characteristics);
+    } else {
+        cout
+            << "\n    Section " << i << ": " << Section_Name
+            << "\n      Virtual: " << Format_Range(sh.Virtual_Address, sh.Virtual_Size)
+            << "\n      Raw Data: " << Format_Range(sh.Pointer_To_Raw_Data, sh.Size_Of_Raw_Data)
+            << "\n      Characteristics: " << (std::hex) << uint32_t(sh.Characteristics);
+    }
 
     auto const characteristics = Get_Section_Characteristics_Names(sh.Characteristics);
 
@@ -205,17 +226,17 @@ void Show_MZ_Section_Header(MZ const& mz, int i, MZ::Section_Header const& sh)
     cout << std::endl;
 }
 
-void Show_MZ_Section_Table(MZ const& mz)
+void Show_MZ_Section_Table(MZ const& mz, bool verbose)
 {
     auto const Number_Of_Sections = mz.Get_Number_of_Sections();
 
     cout << "\n  Image has " << Number_Of_Sections << " sections:";
 
     for (int i = 0; i < Number_Of_Sections; ++i)
-        Show_MZ_Section_Header(mz, i, mz.Get_Section_Header(i));
+        Show_MZ_Section_Header(mz, i, mz.Get_Section_Header(i), verbose);
 }
 
-void Show_Imports(MZ const& mz)
+void Show_Imports(MZ const& mz, bool verbose)
 {
     auto const* entry = mz.Get_Import_Table();
 
@@ -225,14 +246,37 @@ void Show_Imports(MZ const& mz)
         return;
     }
 
-    std::cout
-        << "\n  Entry:"
-        << "\n    Import_Lookup_Table_RVA: " << entry->Import_Lookup_Table_RVA
-        << "\n    Time_Date_Stamp: " << entry->Time_Date_Stamp
-        << "\n    Forwarder_Chain: " << entry->Forwarder_Chain
-        << "\n    Name_RVA: " << entry->Name_RVA
-        << "\n    Import_Address_Table_RVA: " << entry->Import_Address_Table_RVA
-        << "\n";
+    for(;
+        entry->Import_Lookup_Table_RVA != 0;
+        ++entry)
+    {
+        std::cout
+            << "\n  Import:"
+            << "\n    Import_Lookup_Table_RVA: " << entry->Import_Lookup_Table_RVA
+            << "\n    Time_Date_Stamp: " << entry->Time_Date_Stamp
+            << "\n    Forwarder_Chain: " << entry->Forwarder_Chain
+            << "\n    Name: (@" << entry->Name_RVA << ") " << mz.Get_String(entry->Name_RVA)
+            << "\n    Import_Address_Table_RVA: " << entry->Import_Address_Table_RVA;
+
+        if (verbose)
+        {
+            for(auto e = mz.Get_Import_Lookup_Table(entry->Import_Lookup_Table_RVA);
+                e->As_Uint64 != 0;
+                ++e)
+            {
+                if (e->Ordinal_Flag)
+                {
+                    std::cout << "\n      Ordinal: " << e->Ordinal_Number;
+                } else {
+                    auto const entry = mz.Get_Hint_Name_Table_Entry(e->Hint_Or_Name_Table_RVA);
+
+                    std::cout << "\n      " << "Hint: " << entry->Hint << " Name: " << entry->Name;
+                }
+            }
+        }
+
+        std::cout << '\n';
+    }
 
     return;
 }
