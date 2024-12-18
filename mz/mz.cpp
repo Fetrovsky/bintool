@@ -23,6 +23,7 @@ MZ* MZ::Parse(std::string_view buffer)
     else
         return nullptr;
 
+    // This comment is wrong.  Some places assume this to be 64-bit PE+.  Need to fix.
     // Assuming 32-bit PE file.  16-bit and 64-bit support to be added later.
     auto mz = new MZ{buffer};
 
